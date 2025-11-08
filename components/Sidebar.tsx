@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Folder, View } from '../types';
 import { FolderIcon, HeartIcon, MoonIcon, PlusIcon, SparklesIcon, SunIcon, TrashIcon, TrophyIcon, XIcon } from './Icons';

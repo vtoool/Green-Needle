@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Idea, View } from '../types';
 import { ArrowLeftIcon, SwordsIcon } from './Icons';

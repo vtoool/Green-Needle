@@ -1,3 +1,4 @@
+
 # Full-Stack Migration & Developer Guide
 
 This guide outlines the technical steps to transition the client-side React application into a full-stack Next.js project, complete with a database, authentication, and Vercel deployment.
@@ -14,17 +15,17 @@ This guide outlines the technical steps to transition the client-side React appl
 
 ### 1. Project Setup: Migrating to Next.js
 
-The current `create-react-app`-style structure will be migrated into a Next.js project.
+The original React app structure has been successfully migrated into a Next.js project.
 
-1.  **Initialize Next.js**:
+1.  **[DONE] Initialize Next.js**:
     ```bash
     npx create-next-app@latest green-needle-app
     ```
-2.  **Structure Migration**:
-    *   Move the existing React components from `./components` into the `app/components` directory of the new Next.js project.
-    *   The main `App.tsx` logic will be broken down and moved into Next.js pages/layouts (e.g., `app/layout.tsx` and `app/page.tsx`).
-    *   Static assets and `index.html` content (like fonts) will be configured in `app/layout.tsx`.
-    *   The API service `geminiService.ts` will be moved to a backend API route.
+2.  **[DONE] Structure Migration**:
+    *   The existing React components from `./components` have been moved into the `components/` directory.
+    *   The main `App.tsx` logic has been moved into the root Next.js page at `app/page.tsx`.
+    *   Static assets and `index.html` content (like fonts and global styles) are now configured in `app/layout.tsx` and `app/globals.css`.
+    *   The API service `geminiService.ts` remains in the `services/` directory.
 
 ### 2. Version Control & Deployment Host
 

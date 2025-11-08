@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Idea, View } from '../types';
 import { ArrowLeftIcon, SaveIcon } from './Icons';
