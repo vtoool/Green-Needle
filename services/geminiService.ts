@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Idea } from '../types';
 
@@ -109,7 +108,13 @@ export const generateIdeas = async (
             },
         });
         
-        const jsonText = response.text.trim();
+        const textResponse = response.text;
+        if (!textResponse) {
+            console.error("Gemini API returned an empty or undefined response text.");
+            return [];
+        }
+
+        const jsonText = textResponse.trim();
         const parsedIdeas = JSON.parse(jsonText);
 
         if (!Array.isArray(parsedIdeas)) {
