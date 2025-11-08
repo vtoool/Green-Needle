@@ -1,45 +1,141 @@
-# Developer Guide (Explain Like I'm 5)
+# Full-Stack Migration & Developer Guide
 
-Welcome to Idea Swipe! This guide will explain how our app works in a simple way.
+This guide outlines the technical steps to transition the client-side React application into a full-stack Next.js project, complete with a database, authentication, and Vercel deployment.
 
-## What Are We Building? 🧸
+## Tech Stack
 
-Imagine you have a magic toy box that gives you new toy ideas. You can look at an idea, and if you like it, you put it on your "keeper" shelf. If you don't, you put it in the "toss" bin. Later, you can look at all the cool toys on your shelf!
+*   **Framework**: Next.js (App Router)
+*   **Database**: Vercel Postgres
+*   **ORM**: Prisma
+*   **Authentication**: Next-Auth (or a similar library)
+*   **Deployment**: Vercel
 
-Our app is like that magic toy box, but for business ideas. We are turning it from a simple toy that only you can play with (and forgets everything if you close it) into a real, shareable app that remembers everything for you online.
+---
 
-## The Big Picture: Building with LEGOs 🧱
+## Step-by-Step Setup Guide
 
-Our app has three main parts, just like building a big LEGO castle.
+### 1. Project Setup: Migrating to Next.js
 
-#### 1. The Frontend (Your Awesome LEGO Castle)
-This is the part you see and touch. It's the colorful swipe cards, the buttons, and the folders. It's what makes the app look cool and fun to use.
-*   **Our LEGOs**: React
+The current `create-react-app`-style structure will be migrated into a Next.js project.
 
-#### 2. The Backend (The LEGO Instruction Book)
-This is the secret rulebook. When you swipe right on an idea, the Frontend tells the Backend, "Hey, they liked this one!" The Backend then follows the instructions to save it in the right place. It also holds the secret key to talk to the magic idea generator (Gemini).
-*   **Our Instruction Book**: Next.js (on a server)
+1.  **Initialize Next.js**:
+    ```bash
+    npx create-next-app@latest idea-swipe-app
+    ```
+2.  **Structure Migration**:
+    *   Move the existing React components from `./components` into the `app/components` directory of the new Next.js project.
+    *   The main `App.tsx` logic will be broken down and moved into Next.js pages/layouts (e.g., `app/layout.tsx` and `app/page.tsx`).
+    *   Static assets and `index.html` content (like fonts) will be configured in `app/layout.tsx`.
+    *   The API service `geminiService.ts` will be moved to a backend API route.
 
-#### 3. The Database (The Big LEGO Box)
-This is where we keep all our LEGOs (our ideas, our user accounts, our folders) safe. When you close the app and come back later, the Backend asks the Database, "Hey, what ideas did this person save?" and gets them for you. It's our app's memory.
-*   **Our LEGO Box**: Vercel Postgres
+### 2. Version Control & Deployment Host
 
-## Our Tech Stack (Our Official LEGO Kit) 🚀
+1.  **GitHub Repository**: Create a new repository on GitHub and push the Next.js project to it.
+2.  **Vercel Project**:
+    *   Sign up for a Vercel account.
+    *   Create a "New Project" and import the GitHub repository you just created.
+    *   Vercel will automatically detect the Next.js framework and configure the build settings.
 
-*   **Next.js (React)**: The main building block for both our Frontend and Backend. It's great because it lets us build both parts in one place.
-*   **Gemini API**: The magical machine that comes up with all the cool new ideas for us.
-*   **Vercel**: The playground where our LEGO castle lives so everyone on the internet can visit it. It's where we'll host our app.
-*   **GitHub**: The blueprint library where we store the plans for our castle, so we can track all the changes we make.
+### 3. Database Setup (Vercel Postgres + Prisma)
 
-## The Plan (Building the Castle Step-by-Step) 🗺️
+1.  **Create Database**:
+    *   In your Vercel project dashboard, navigate to the "Storage" tab.
+    *   Select "Postgres" and create a new database.
+    *   Once created, Vercel will provide connection strings. Select the `.env.local` tab and copy the `POSTGRES_URL_NONPOOLING` variable. This is what Prisma will use for migrations.
 
-We're going to build this in a few big steps. You can follow our progress in `AGENTS.md`.
+2.  **Integrate Prisma**:
+    *   Install Prisma into your Next.js project:
+        ```bash
+        npm install prisma --save-dev
+        npx prisma init
+        ```
+    *   This creates a `prisma` directory and a `schema.prisma` file. It also creates a `.env` file.
+    *   In `.env`, set the `DATABASE_URL` to the connection string you copied from Vercel:
+        ```
+        DATABASE_URL="postgres://..."
+        ```
+    *   Also, add this variable to your Vercel project's Environment Variables settings for deployment.
 
-1.  **Get the New LEGOs**: We'll switch our project to use Next.js, which lets us build a frontend and backend together.
-2.  **Build the LEGO Box**: We'll set up our database to hold users, ideas, and folders.
-3.  **Create a Clubhouse Key**: We'll add a login and signup page so only registered users can have their own private collection of ideas.
-4.  **Rewrite the Instruction Book**: We'll move all the rules (like what happens when you swipe) from the frontend to our new backend. This makes our app smarter and more secure.
-5.  **Connect Everything**: We'll teach the Frontend how to talk to the Backend to save and get ideas.
-6.  **Open the Playground**: We'll put our finished app on Vercel so the whole world can use it!
+3.  **Define the Schema**:
+    *   Open `prisma/schema.prisma` and define your database models. This schema replaces the TypeScript types and `localStorage` structure.
 
-That's the plan! It's a big project, but by doing it one step at a time, we'll build something amazing.
+    ```prisma
+    // This is your Prisma schema file,
+    // learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+    generator client {
+      provider = "prisma-client-js"
+    }
+
+    datasource db {
+      provider = "postgresql"
+      url      = env("DATABASE_URL")
+    }
+
+    model User {
+      id        String   @id @default(cuid())
+      email     String   @unique
+      password  String // In a real app, this would be a hashed password
+      createdAt DateTime @default(now())
+      updatedAt DateTime @updatedAt
+
+      folders   Folder[]
+    }
+
+    model Folder {
+      id        String   @id @default(cuid())
+      name      String
+      theme     String?
+      createdAt DateTime @default(now())
+
+      userId    String
+      user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+      parentId  String?
+      parent    Folder?  @relation("SubFolders", fields: [parentId], references: [id], onDelete: Cascade)
+      subFolders Folder[] @relation("SubFolders")
+
+      ideas     Idea[]
+
+      @@index([userId])
+      @@index([parentId])
+    }
+
+    model Idea {
+      id          String    @id @default(cuid())
+      name        String
+      description String
+      features    String[]
+      notes       String?
+      createdAt   DateTime  @default(now())
+
+      folderId    String
+      folder      Folder    @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+      @@index([folderId])
+    }
+    ```
+
+4.  **Run Migration**:
+    *   Apply this schema to your Vercel Postgres database by running the Prisma migrate command. This will generate the necessary SQL and create the tables.
+    ```bash
+    npx prisma migrate dev --name init
+    ```
+    *   This also generates the Prisma Client, which you'll use to talk to the database in your API routes.
+
+### 4. Backend Development: API Routes
+
+The business logic currently in `App.tsx` (e.g., `handleSwipe`, `moveIdea`) will be moved into Next.js API Routes (e.g., in `app/api/`).
+
+*   `/api/auth/signup`: Create a new user.
+*   `/api/auth/login`: Authenticate a user and create a session.
+*   `/api/folders`: `GET` all folders for the logged-in user. `POST` to create a new folder.
+*   `/api/ideas`: `POST` to handle a swipe. `PUT` to move an idea or update its content. `DELETE` to permanently delete an idea.
+*   `/api/generate`: A secure route that takes a prompt/theme and calls the Gemini API using a server-side API key.
+
+### 5. Frontend Refactoring
+
+Finally, update the frontend components to use the new backend:
+*   Remove all `localStorage` logic.
+*   In `App.tsx` (or its new equivalent), use a library like `SWR` or `React Query` (or simple `fetch` calls) inside `useEffect` hooks to load initial data (folders, etc.) from your API.
+*   All user actions (swiping, moving, creating folders) should now call `fetch` to your API endpoints instead of manipulating the local state directly. The state should be updated based on the API response to ensure consistency.
