@@ -12,30 +12,34 @@ const responseSchema = {
         },
         description: {
           type: Type.STRING,
-          description: "A single sentence describing the core value proposition of the idea.",
+          description: "A rich description, approximately 2-3 sentences long, for the web app, its target audience, and the main problem it solves. It should read like natural marketing copy.",
         },
         features: {
           type: Type.ARRAY,
           items: {
             type: Type.STRING,
           },
-          description: "A list of 3 key features that make the product compelling.",
+          description: "A list of 3 key features. Each feature should be a full, descriptive sentence that clearly explains what the feature does, similar in style to 'Provides real-time vulnerability scanning across multiple frameworks.'",
         },
       },
       required: ["name", "description", "features"],
     },
 };
 
-const createMockIdea = (index: number, theme?: string): Idea => ({
-    id: crypto.randomUUID(),
-    name: `${theme ? theme.charAt(0).toUpperCase() + theme.slice(1) : 'Mock'} Idea ${index}`,
-    description: `This is a mock description for idea number ${index}. It's generated locally for development and testing purposes without calling any AI. The current theme is "${theme || 'none'}".`,
-    features: [
-        `Feature A for idea ${index} with some interesting detail.`,
-        `Feature B, which is exclusive to idea ${index} and solves a problem.`,
-        `Feature C, a revolutionary new concept for idea ${index}.`,
-    ],
-});
+const createMockIdea = (index: number, theme?: string): Idea => {
+    const randomNumber = Math.floor(Math.random() * 1000000);
+    const mockName = `Mock Idea ${randomNumber}`;
+    return {
+        id: crypto.randomUUID(),
+        name: mockName,
+        description: `This is a mock idea for "${mockName}", generated locally. It's a placeholder to demonstrate the app's functionality without making real API calls. The current theme is "${theme || 'none'}".`,
+        features: [
+            "Feature A, which is the main reason you'd pay for this.",
+            "Feature B, solving a problem you didn't know you had.",
+            "Feature C, because our marketing team said we need three.",
+        ],
+    };
+};
 
 export class InvalidApiKeyError extends Error {
     constructor(message: string) {
@@ -44,11 +48,18 @@ export class InvalidApiKeyError extends Error {
     }
 }
 
+interface GenerateIdeasOptions {
+    parentIdea?: Idea | null;
+    likedIdeas?: Idea[];
+    theme?: string;
+}
+
 export const generateIdeas = async (
     count: number,
-    { parentIdea = null, likedIdeas = [], theme = '' }: { parentIdea?: Idea | null; likedIdeas?: Idea[]; theme?: string; },
+    options: GenerateIdeasOptions = {},
     isDevMode: boolean = false
 ): Promise<Idea[]> => {
+    const { parentIdea = null, likedIdeas = [], theme = '' } = options;
     
     if (isDevMode) {
         console.log("Developer Mode: Generating mock ideas instead of calling API.");

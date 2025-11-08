@@ -154,13 +154,13 @@ export const BattleArenaView: React.FC<BattleArenaViewProps> = ({ initialIdeas, 
     
     if (winner) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-gray-900 animate-fade-in-up">
-                <h1 className="text-sm font-bold text-yellow-400 uppercase tracking-widest">Tournament Winner</h1>
-                <h2 className="text-4xl font-bold text-white mt-2 mb-8">Congratulations!</h2>
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-gray-100 dark:bg-brand-950 animate-fade-in-up">
+                <h1 className="text-sm font-bold text-yellow-500 uppercase tracking-widest">Tournament Winner</h1>
+                <h2 className="text-4xl font-bold text-gray-900 dark:text-white mt-2 mb-8">Congratulations!</h2>
                 <div className="w-full max-w-sm">
                     <BattleIdeaCard idea={winner} onClick={() => setView({type:'idea-detail', path: ['winners'], ideaId: winner.id })} />
                 </div>
-                <button onClick={() => setView({ type: 'folders', path })} className="mt-8 flex items-center gap-2 text-gray-300 hover:text-white transition-colors p-2 rounded-md hover:bg-gray-800">
+                <button onClick={() => setView({ type: 'folders', path })} className="mt-8 flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-md hover:bg-gray-200 dark:hover:bg-brand-900">
                     <ArrowLeftIcon className="w-5 h-5" />
                     Back to Folder
                 </button>
@@ -170,9 +170,9 @@ export const BattleArenaView: React.FC<BattleArenaViewProps> = ({ initialIdeas, 
 
     if (rounds.length > 0 && (currentContestants[0] === null || currentContestants[1] === null) && !winner) {
          return (
-            <div className="flex-1 flex flex-col items-center justify-center bg-gray-800/50 p-4">
+            <div className="flex-1 flex flex-col items-center justify-center bg-gray-100 dark:bg-brand-900 p-4">
                 <div className="text-center">
-                     <p className="text-2xl text-gray-400 animate-pulse">Finding next match...</p>
+                     <p className="text-2xl text-gray-500 dark:text-gray-400 animate-pulse">Finding next match...</p>
                 </div>
             </div>
         );
@@ -183,21 +183,24 @@ export const BattleArenaView: React.FC<BattleArenaViewProps> = ({ initialIdeas, 
             <style>{`
                 .bracket-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
                 .bracket-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                .bracket-scrollbar::-webkit-scrollbar-thumb { background: #4B5563; border-radius: 4px; }
-                .bracket-scrollbar::-webkit-scrollbar-thumb:hover { background: #6B7280; }
+                .bracket-scrollbar::-webkit-scrollbar-thumb { background: #9CA3AF; }
+                .dark .bracket-scrollbar::-webkit-scrollbar-thumb { background: #15803d; }
+                .bracket-scrollbar::-webkit-scrollbar-thumb:hover { background: #16a34a; }
                 
                 .bracket-connector { position: relative; width: 1.5rem; }
-                .bracket-line { position: absolute; left: 0; top: 50%; width: 100%; height: 2px; background-color: #374151; transform: translateY(-50%); }
-                .bracket-arm { position: absolute; right: 0; width: 2px; background-color: #374151; }
+                .bracket-line { position: absolute; left: 0; top: 50%; width: 100%; height: 2px; background-color: #D1D5DB; transform: translateY(-50%); }
+                .dark .bracket-line { background-color: #166534; }
+                .bracket-arm { position: absolute; right: 0; width: 2px; background-color: #D1D5DB; }
+                .dark .bracket-arm { background-color: #166534; }
             `}</style>
-             <div className="p-4 sm:p-6 border-b border-gray-800 bg-gray-900/50">
+             <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-brand-900 bg-white dark:bg-brand-950">
                 <div className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-2xl font-bold text-white">Battle Arena</h1>
-                        <p className="text-sm text-gray-400">Choosing the best idea from <span className="font-semibold text-purple-300">{folderName}</span></p>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Battle Arena</h1>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Choosing the best idea from <span className="font-semibold text-purple-600 dark:text-purple-300">{folderName}</span></p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button onClick={() => setView({ type: 'folders', path })} className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors p-2 rounded-md hover:bg-gray-800">
+                        <button onClick={() => setView({ type: 'folders', path })} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors p-2 rounded-md hover:bg-gray-200 dark:hover:bg-brand-900">
                             <ArrowLeftIcon className="w-5 h-5" />
                             <span className="hidden sm:inline">Back to Folder</span>
                         </button>
@@ -206,7 +209,7 @@ export const BattleArenaView: React.FC<BattleArenaViewProps> = ({ initialIdeas, 
             </div>
             <div className="flex-1 flex flex-col-reverse lg:flex-row overflow-hidden">
                 {/* Bracket Column */}
-                <div ref={bracketContainerRef} className="flex flex-col lg:w-7/12 flex-1 overflow-auto bg-gray-900 p-6 bracket-scrollbar">
+                <div ref={bracketContainerRef} className="flex flex-col lg:w-7/12 flex-1 overflow-auto bg-gray-50 dark:bg-brand-900 p-6 bracket-scrollbar">
                     <div className="flex justify-start items-center min-h-full gap-8">
                         {rounds.map((round, roundIndex) => (
                             <div key={roundIndex} className="flex flex-col h-full" style={{ justifyContent: 'space-around' }}>
@@ -218,10 +221,10 @@ export const BattleArenaView: React.FC<BattleArenaViewProps> = ({ initialIdeas, 
 
                                     const getParticipantClass = (p: Idea | null) => {
                                         let classes = 'p-2 w-48 text-sm rounded border truncate transition-all ';
-                                        if (!p) return classes + 'bg-gray-800/50 border-gray-700/50 text-gray-500';
-                                        if (winnerOfThisMatch && p.id !== winnerOfThisMatch.id) classes += 'opacity-50 bg-gray-800 border-gray-700 ';
-                                        else classes += 'bg-gray-800 border-gray-700 text-gray-300 ';
-                                        if (isCurrentActiveMatch) classes += 'border-indigo-500 ring-2 ring-indigo-500/50 ';
+                                        if (!p) return classes + 'bg-gray-200 dark:bg-brand-900/50 border-gray-300 dark:border-brand-800/50 text-gray-400 dark:text-brand-400';
+                                        if (winnerOfThisMatch && p.id !== winnerOfThisMatch.id) classes += 'opacity-50 bg-gray-100 dark:bg-brand-900 border-gray-300 dark:border-brand-800 ';
+                                        else classes += 'bg-white dark:bg-brand-900 border-gray-300 dark:border-brand-800 text-gray-700 dark:text-gray-300 ';
+                                        if (isCurrentActiveMatch) classes += 'border-brand-500 ring-2 ring-brand-500/50 ';
                                         return classes;
                                     };
                                     
@@ -250,10 +253,10 @@ export const BattleArenaView: React.FC<BattleArenaViewProps> = ({ initialIdeas, 
 
 
                 {/* Matchup Column */}
-                <div className="flex flex-1 lg:w-5/12 flex-col items-center justify-center p-4 sm:p-6 bg-gray-800/50 overflow-y-auto border-t border-gray-800 lg:border-t-0 lg:border-l">
+                <div className="flex flex-1 lg:w-5/12 flex-col items-center justify-center p-4 sm:p-6 bg-gray-100 dark:bg-brand-950 overflow-y-auto border-t border-gray-200 dark:border-brand-900 lg:border-t-0 lg:border-l">
                     <div className="w-full max-w-md mx-auto">
                         <h2 className="text-center text-2xl font-bold mb-1">Choose an Idea</h2>
-                        <p className="text-center text-gray-400 mb-4">Round {currentMatch.round + 1} / {rounds.length - 1} &middot; Match {currentMatch.match + 1}</p>
+                        <p className="text-center text-gray-500 dark:text-gray-400 mb-4">Round {currentMatch.round + 1} / {rounds.length - 1} &middot; Match {currentMatch.match + 1}</p>
                         <div className="flex flex-col gap-4 items-stretch">
                            {currentContestants[0] && <BattleIdeaCard idea={currentContestants[0]} onClick={() => handleSelectWinner(currentContestants[0]!)} />}
                            {currentContestants[1] && <BattleIdeaCard idea={currentContestants[1]} onClick={() => handleSelectWinner(currentContestants[1]!)} />}

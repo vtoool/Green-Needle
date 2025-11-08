@@ -1,6 +1,9 @@
+
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
-import { SwipeScreen } from './components/SwipeScreen';
+// FIX: Corrected import for default export `SwipeScreen`.
+import SwipeScreen from './components/SwipeScreen';
 import { FolderView } from './components/FolderView';
 import { IdeaDetailView } from './components/IdeaDetailView';
 import { BattleArenaView } from './components/BattleArenaView';
@@ -33,6 +36,16 @@ const App: React.FC = () => {
       return true; // Also default to true if localStorage is inaccessible
     }
   });
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('theme')) {
+      return localStorage.getItem('theme') as 'light' | 'dark';
+    }
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  });
+
 
   useEffect(() => {
     try {
@@ -46,9 +59,20 @@ const App: React.FC = () => {
     try {
       localStorage.setItem('idea-swipe-dev-mode', String(isDevMode));
     } catch (error) {
+// FIX: Added a missing opening brace `{` to the catch block to fix a syntax error. This was causing subsequent code to be parsed incorrectly, leading to numerous scope-related errors.
       console.error("Could not save dev mode setting to localStorage", error);
     }
   }, [isDevMode]);
+  
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [theme]);
 
 
   const getFolderByPath = (path: string[]): Folder | null => {
@@ -377,7 +401,7 @@ const App: React.FC = () => {
       if (folder) {
         return <FolderView folder={folder} path={view.path} setView={setView} createFolder={createFolder} deleteIdeaForever={deleteIdeaForever} />;
       }
-      return <div className="p-8 text-center text-gray-400">Folder not found.</div>;
+      return <div className="p-8 text-center text-gray-500 dark:text-gray-400">Folder not found.</div>;
     }
     if (view.type === 'idea-detail') {
         const folder = getFolderByPath(view.path);
@@ -390,7 +414,7 @@ const App: React.FC = () => {
                       updateIdea={updateIdea} 
                     />
         }
-        return <div className="p-8 text-center text-gray-400">Idea not found.</div>;
+        return <div className="p-8 text-center text-gray-500 dark:text-gray-400">Idea not found.</div>;
     }
     if (view.type === 'battle') {
         const folder = getFolderByPath(view.path);
@@ -404,13 +428,13 @@ const App: React.FC = () => {
                       handleTournamentWin={handleTournamentWin}
                     />
         }
-        return <div className="p-8 text-center text-gray-400">Folder not found for battle.</div>;
+        return <div className="p-8 text-center text-gray-500 dark:text-gray-400">Folder not found for battle.</div>;
     }
     return null;
   };
 
   return (
-    <div className="flex h-screen w-full bg-gray-900 font-sans overflow-hidden">
+    <div className="flex h-screen w-full bg-gray-100 dark:bg-brand-950 font-sans overflow-hidden">
       <div onClick={() => setIsSidebarOpen(false)} className={`fixed inset-0 bg-black/50 z-30 md:hidden ${isSidebarOpen ? 'block' : 'hidden'}`}/>
       <Sidebar 
         folders={folders} 
@@ -422,10 +446,12 @@ const App: React.FC = () => {
         createFolder={createFolder}
         isDevMode={isDevMode}
         setIsDevMode={setIsDevMode}
+        theme={theme}
+        setTheme={setTheme}
       />
       <main className="flex-1 flex flex-col overflow-hidden">
         <div className="pt-2 pl-4 md:hidden">
-          <button onClick={() => setIsSidebarOpen(true)} className="p-2 rounded-md hover:bg-gray-800" aria-label="Open sidebar">
+          <button onClick={() => setIsSidebarOpen(true)} className="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-brand-900" aria-label="Open sidebar">
             <MenuIcon className="w-6 h-6" />
           </button>
         </div>

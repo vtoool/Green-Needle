@@ -5,9 +5,7 @@ This guide outlines the technical steps to transition the client-side React appl
 ## Tech Stack
 
 *   **Framework**: Next.js (App Router)
-*   **Database**: Vercel Postgres
-*   **ORM**: Prisma
-*   **Authentication**: Next-Auth (or a similar library)
+*   **Backend-as-a-Service**: Supabase (Database, Auth, Storage)
 *   **Deployment**: Vercel
 
 ---
@@ -20,7 +18,7 @@ The current `create-react-app`-style structure will be migrated into a Next.js p
 
 1.  **Initialize Next.js**:
     ```bash
-    npx create-next-app@latest idea-swipe-app
+    npx create-next-app@latest green-needle-app
     ```
 2.  **Structure Migration**:
     *   Move the existing React components from `./components` into the `app/components` directory of the new Next.js project.
@@ -36,106 +34,104 @@ The current `create-react-app`-style structure will be migrated into a Next.js p
     *   Create a "New Project" and import the GitHub repository you just created.
     *   Vercel will automatically detect the Next.js framework and configure the build settings.
 
-### 3. Database Setup (Vercel Postgres + Prisma)
+### 3. Backend Setup (Supabase)
 
-1.  **Create Database**:
-    *   In your Vercel project dashboard, navigate to the "Storage" tab.
-    *   Select "Postgres" and create a new database.
-    *   Once created, Vercel will provide connection strings. Select the `.env.local` tab and copy the `POSTGRES_URL_NONPOOLING` variable. This is what Prisma will use for migrations.
+Supabase will handle our database and user authentication.
 
-2.  **Integrate Prisma**:
-    *   Install Prisma into your Next.js project:
+1.  **Create Supabase Project**:
+    *   Go to [supabase.com](https://supabase.com), create an account, and start a "New Project".
+    *   Give it a name and generate a secure database password (save this password!).
+
+2.  **Get API Keys**:
+    *   Once the project is ready, go to "Project Settings" > "API".
+    *   You'll find your **Project URL** and `anon` **public key**.
+    *   Copy these into a new `.env.local` file in your Next.js project:
+        ```
+        NEXT_PUBLIC_SUPABASE_URL=YOUR_PROJECT_URL
+        NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY
+        ```
+    *   Also, add these as Environment Variables in your Vercel project settings.
+
+3.  **Define the Schema (SQL)**:
+    *   Go to the "SQL Editor" in your Supabase dashboard.
+    *   Create a new query and run the SQL code below to create your tables. This replaces the `schema.prisma` file. Supabase automatically links tables based on foreign keys.
+
+    ```sql
+    -- Users table is managed by Supabase Auth, we just reference it.
+
+    -- Folders Table
+    create table public.folders (
+      id uuid primary key default gen_random_uuid(),
+      name text not null,
+      theme text,
+      created_at timestamptz default now() not null,
+      user_id uuid references auth.users(id) on delete cascade not null,
+      parent_id uuid references public.folders(id) on delete cascade -- self-referencing for subfolders
+    );
+
+    -- Ideas Table
+    create table public.ideas (
+      id uuid primary key default gen_random_uuid(),
+      name text not null,
+      description text not null,
+      features text[] not null,
+      notes text,
+      created_at timestamptz default now() not null,
+      folder_id uuid references public.folders(id) on delete cascade not null,
+      user_id uuid references auth.users(id) on delete cascade not null -- for easier RLS policies
+    );
+
+    -- Enable Row Level Security (RLS) for all tables
+    alter table public.folders enable row level security;
+    alter table public.ideas enable row level security;
+
+    -- RLS Policies: Allow users to manage their own data
+    create policy "Users can view their own folders" on public.folders
+      for select using (auth.uid() = user_id);
+
+    create policy "Users can insert their own folders" on public.folders
+      for insert with check (auth.uid() = user_id);
+
+    create policy "Users can update their own folders" on public.folders
+      for update using (auth.uid() = user_id);
+
+    create policy "Users can delete their own folders" on public.folders
+      for delete using (auth.uid() = user_id);
+
+
+    create policy "Users can view their own ideas" on public.ideas
+      for select using (auth.uid() = user_id);
+
+    create policy "Users can insert their own ideas" on public.ideas
+      for insert with check (auth.uid() = user_id);
+
+    create policy "Users can update their own ideas" on public.ideas
+      for update using (auth.uid() = user_id);
+
+    create policy "Users can delete their own ideas" on public.ideas
+      for delete using (auth.uid() = user_id);
+    ```
+
+4.  **Install Supabase Client**:
+    *   Install the official Supabase helper library for Next.js:
         ```bash
-        npm install prisma --save-dev
-        npx prisma init
+        npm install @supabase/auth-helpers-nextjs @supabase/supabase-js
         ```
-    *   This creates a `prisma` directory and a `schema.prisma` file. It also creates a `.env` file.
-    *   In `.env`, set the `DATABASE_URL` to the connection string you copied from Vercel:
-        ```
-        DATABASE_URL="postgres://..."
-        ```
-    *   Also, add this variable to your Vercel project's Environment Variables settings for deployment.
+    *   This will help you manage user sessions and interact with your database easily.
 
-3.  **Define the Schema**:
-    *   Open `prisma/schema.prisma` and define your database models. This schema replaces the TypeScript types and `localStorage` structure.
+### 4. Backend Development: API Routes & Server Components
 
-    ```prisma
-    // This is your Prisma schema file,
-    // learn more about it in the docs: https://pris.ly/d/prisma-schema
+Instead of creating many API routes for simple database actions, Supabase allows you to securely query your data directly from the frontend (thanks to RLS) or from Next.js Server Components.
 
-    generator client {
-      provider = "prisma-client-js"
-    }
-
-    datasource db {
-      provider = "postgresql"
-      url      = env("DATABASE_URL")
-    }
-
-    model User {
-      id        String   @id @default(cuid())
-      email     String   @unique
-      password  String // In a real app, this would be a hashed password
-      createdAt DateTime @default(now())
-      updatedAt DateTime @updatedAt
-
-      folders   Folder[]
-    }
-
-    model Folder {
-      id        String   @id @default(cuid())
-      name      String
-      theme     String?
-      createdAt DateTime @default(now())
-
-      userId    String
-      user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-      parentId  String?
-      parent    Folder?  @relation("SubFolders", fields: [parentId], references: [id], onDelete: Cascade)
-      subFolders Folder[] @relation("SubFolders")
-
-      ideas     Idea[]
-
-      @@index([userId])
-      @@index([parentId])
-    }
-
-    model Idea {
-      id          String    @id @default(cuid())
-      name        String
-      description String
-      features    String[]
-      notes       String?
-      createdAt   DateTime  @default(now())
-
-      folderId    String
-      folder      Folder    @relation(fields: [folderId], references: [id], onDelete: Cascade)
-
-      @@index([folderId])
-    }
-    ```
-
-4.  **Run Migration**:
-    *   Apply this schema to your Vercel Postgres database by running the Prisma migrate command. This will generate the necessary SQL and create the tables.
-    ```bash
-    npx prisma migrate dev --name init
-    ```
-    *   This also generates the Prisma Client, which you'll use to talk to the database in your API routes.
-
-### 4. Backend Development: API Routes
-
-The business logic currently in `App.tsx` (e.g., `handleSwipe`, `moveIdea`) will be moved into Next.js API Routes (e.g., in `app/api/`).
-
-*   `/api/auth/signup`: Create a new user.
-*   `/api/auth/login`: Authenticate a user and create a session.
-*   `/api/folders`: `GET` all folders for the logged-in user. `POST` to create a new folder.
-*   `/api/ideas`: `POST` to handle a swipe. `PUT` to move an idea or update its content. `DELETE` to permanently delete an idea.
-*   `/api/generate`: A secure route that takes a prompt/theme and calls the Gemini API using a server-side API key.
+*   **Authentication**: Use the Supabase client library functions like `supabase.auth.signUp()` and `supabase.auth.signInWithPassword()` directly in your frontend components.
+*   **Data Operations**: Fetch and modify data using the Supabase client (e.g., `supabase.from('folders').select('*')`). This can be done in Server Components for initial data loads or in Client Components for interactive updates.
+*   **Secure AI Generation**: The Gemini API call should still be in a dedicated API Route (`/api/generate`) to protect your `API_KEY`. This route will be protected using Supabase session checks.
 
 ### 5. Frontend Refactoring
 
-Finally, update the frontend components to use the new backend:
+Finally, update the frontend components to use Supabase:
 *   Remove all `localStorage` logic.
-*   In `App.tsx` (or its new equivalent), use a library like `SWR` or `React Query` (or simple `fetch` calls) inside `useEffect` hooks to load initial data (folders, etc.) from your API.
-*   All user actions (swiping, moving, creating folders) should now call `fetch` to your API endpoints instead of manipulating the local state directly. The state should be updated based on the API response to ensure consistency.
+*   Wrap your application in a Supabase provider to manage auth state.
+*   Fetch initial data in Server Components by creating a server-side Supabase client.
+*   All user actions (swiping, moving, creating folders) should now call Supabase client functions (`supabase.from('ideas').insert(...)`).
+*   Use Supabase's real-time subscriptions to automatically update the UI when database changes occur, creating a live and responsive experience.
